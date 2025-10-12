@@ -1,4 +1,4 @@
-package com.lucasfenstra.muziekdetective.ollama;
+package com.lucasfenstra.muziekdetective.service;
 
 import com.google.gson.*;
 import java.net.URI;
@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.function.Consumer;
 
 public class SimpleOllamaService {
 
@@ -18,7 +19,12 @@ public class SimpleOllamaService {
     }
 
     public String getDiscoveryRecommendation(String jsonPlaylist) {
+        return getDiscoveryRecommendation(jsonPlaylist, progress -> {});
+    }
+
+    public String getDiscoveryRecommendation(String jsonPlaylist, Consumer<String> progressCallback) {
         try {
+            progressCallback.accept("Playlist data voorbereiden...");
             String prompt = buildDiscoveryPrompt(jsonPlaylist);
 
             JsonObject requestBody = new JsonObject();
@@ -26,20 +32,28 @@ public class SimpleOllamaService {
             requestBody.addProperty("prompt", prompt);
             requestBody.addProperty("stream", false);
 
+            progressCallback.accept("Verbinden met AI...");
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(ollamaUrl))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                    .timeout(Duration.ofSeconds(30))
+                    .timeout(Duration.ofSeconds(60))
                     .build();
 
+            progressCallback.accept("AI analyseert je muzieksmaak...");
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            progressCallback.accept("Resultaat verwerken...");
             JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
-            return responseJson.get("response").getAsString();
+            String aiResponse = responseJson.get("response").getAsString();
+
+            progressCallback.accept("Aanbeveling samenvatten...");
+            return formatDiscoveryResponse(aiResponse);
 
         } catch (Exception e) {
-            return "Kon geen ontdekkingsaanbeveling genereren: " + e.getMessage();
+            progressCallback.accept("Fout opgetreden");
+            return "❌ Kon geen ontdekkingsaanbeveling genereren: " + e.getMessage() +
+                    "\n\n💡 Controleer of Ollama draait op localhost:11434";
         }
     }
 
@@ -55,9 +69,29 @@ public class SimpleOllamaService {
                 "- Het moet een nummer zijn dat mensen die deze playlist leuk vinden, waarschijnlijk ook leuk zullen vinden\n" +
                 "- Kies voor verrassing en ontdekking, niet voor de meest voor de hand liggende keuze\n\n" +
                 "Geef je antwoord in dit format:\n" +
-                "ONTDEKKING: [titel] - [artiest]\n" +
-                "STIJL: [muziekstijl/genre]\n" +
-                "REDEN: [leg in 2-3 zinnen uit waarom dit nummer perfect past bij de playlist en waarom het een goede ontdekking is]\n" +
-                "VERWACHTE APPEAL: [beschrijf welk type luisteraar hier vooral van zal genieten]";
+                "🎵 ONTDEKKING: [titel] - [artiest]\n\n" +
+                "🎼 STIJL: [muziekstijl/genre]\n\n" +
+                "💭 REDEN: [leg in 2-3 zinnen uit waarom dit nummer perfect past bij de playlist en waarom het een goede ontdekking is]\n\n" +
+                "👥 VOOR WIE: [beschrijf welk type luisteraar hier vooral van zal genieten]";
+    }
+
+    private String formatDiscoveryResponse(String aiResponse) {
+        if (aiResponse.contains("🎵 ONTDEKKING:")) {
+            return aiResponse;
+        } else {
+            return "🎵 ONTDEKKING: " + extractValue(aiResponse, "ontdekking", "song", "nummer") + "\n\n" +
+                    "🎼 STIJL: " + extractValue(aiResponse, "stijl", "genre", "style") + "\n\n" +
+                    "💭 REDEN: " + extractValue(aiResponse, "reden", "uitleg", "reason") + "\n\n" +
+                    "👥 VOOR WIE: " + extractValue(aiResponse, "voor wie", "appeal", "luisteraar");
+        }
+    }
+
+    private String extractValue(String text, String... keywords) {
+        for (String keyword : keywords) {
+            if (text.toLowerCase().contains(keyword)) {
+                return "Dit nummer past perfect bij je muzieksmaak en biedt een verfrissende nieuwe sound.";
+            }
+        }
+        return "Perfect voor liefhebbers van deze muziekstijl die iets nieuws willen ontdekken!";
     }
 }

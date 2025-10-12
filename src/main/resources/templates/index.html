@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muziek Detective - Ontdek Nieuwe Muziek</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .discovery-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 15px;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary:disabled {
+            opacity: 0.7;
+            transform: none;
+        }
+        .spotify-input {
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            padding: 15px 20px;
+            font-size: 16px;
+        }
+        .spotify-input:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 0.2rem rgba(118, 75, 162, 0.25);
+        }
+        .music-icon {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        .progress-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-steps {
+            margin-top: 15px;
+        }
+        .progress-step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        .progress-step.active {
+            opacity: 1;
+            font-weight: 600;
+        }
+        .progress-step.completed {
+            opacity: 1;
+            color: #28a745;
+        }
+        .progress-step i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <h4 class="mb-3">Je muziek aan het analyseren...</h4>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="progressText" class="mt-2 text-muted">Initialiseren...</div>
+
+            <div class="progress-steps">
+                <div id="step1" class="progress-step">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Scraping Spotify playlist</span>
+                </div>
+                <div id="step2" class="progress-step">
+                    <i class="far fa-circle"></i>
+                    <span>Analyseren met AI</span>
+                </div>
+                <div id="step3" class="progress-step">
+                    <i class="far fa-circle"></i>
+                    <span>Aanbeveling genereren</span>
+                </div>
+            </div>
+        </div>
+
+        <small class="text-muted">
+            <i class="fas fa-info-circle me-1"></i>
+            Dit kan even duren... We halen je playlist op en analyseren deze met AI.
+        </small>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Header Card -->
+            <div class="main-card p-5 mb-4">
+                <div class="text-center mb-4">
+                    <i class="fas fa-music music-icon mb-3 pulse"></i>
+                    <h1 class="display-5 fw-bold text-dark">Muziek Detective</h1>
+                    <p class="lead text-muted">
+                        Plak je Spotify playlist URL en ontdek nieuwe muziek die perfect bij je smaak past!
+                    </p>
+                </div>
+
+                <!-- Flash Messages -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span th:text="${success ? 'Playlist succesvol geanalyseerd!' : ''}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Input Form -->
+                <form id="playlistForm" th:action="@{/analyze}" method="post" class="mb-4">
+                    <div class="input-group mb-3">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fab fa-spotify text-success"></i>
+                            </span>
+                        <input type="url"
+                               class="form-control spotify-input border-start-0"
+                               name="playlistUrl"
+                               id="playlistUrl"
+                               placeholder="https://open.spotify.com/playlist/..."
+                               required
+                               th:value="${playlistUrl}">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="analyzeBtn">
+                            <i class="fas fa-search me-2"></i>
+                            Ontdek Nieuwe Muziek
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Help Text -->
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Hoe krijg ik een playlist URL? Ga naar je Spotify playlist, klik op "..." → "Delen" → "Playlist link kopiëren"
+                    </small>
+                </div>
+            </div>
+
+            <!-- Discovery Result -->
+            <div th:if="${discovery}" class="main-card p-4">
+                <div class="discovery-card p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-compass me-3 fa-2x"></i>
+                        <h3 class="mb-0">Je Muziek Ontdekking</h3>
+                    </div>
+
+                    <div class="bg-white text-dark rounded p-4">
+                        <pre th:text="${discovery}" class="mb-0" style="white-space: pre-wrap; font-family: inherit; font-size: 1.1em;"></pre>
+                    </div>
+
+                    <div class="mt-3 text-center">
+                        <small class="text-light">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Zoek dit nummer op Spotify om het direct te beluisteren!
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="row mt-4 text-center">
+                <div class="col-md-4 mb-3">
+                    <div class="main-card p-3 h-100">
+                        <i class="fas fa-robot text-primary fa-2x mb-2"></i>
+                        <h5>AI Aanbevelingen</h5>
+                        <p class="text-muted small">Mistral AI analyseert je playlist en vindt perfecte nieuwe nummers</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="main-card p-3 h-100">
+                        <i class="fas fa-surprise text-primary fa-2x mb-2"></i>
+                        <h5>Verrassende Ontdekkingen</h5>
+                        <p class="text-muted small">Ontdek artiesten en nummers die je nog niet kende maar wel leuk vindt</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="main-card p-3 h-100">
+                        <i class="fas fa-bolt text-primary fa-2x mb-2"></i>
+                        <h5>Real-time Voortgang</h5>
+                        <p class="text-muted small">Zie live wat er gebeurt tijdens het analyseren</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="text-center text-white mt-5 pb-3">
+    <p class="mb-0">🎵 Muziek Detective - Powered by Spring Boot & Ollama</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('playlistForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // Disable button and show loading
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyseren...';
+        loadingOverlay.style.display = 'flex';
+
+        // Generate session ID
+        const sessionId = Date.now().toString();
+
+        // Start progress simulation
+        simulateProgress(sessionId, progressFill, progressText);
+
+        // Submit form after a short delay to show loading
+        setTimeout(() => {
+            // Add session ID as hidden field
+            const sessionInput = document.createElement('input');
+            sessionInput.type = 'hidden';
+            sessionInput.name = 'sessionId';
+            sessionInput.value = sessionId;
+            this.appendChild(sessionInput);
+
+            this.submit();
+        }, 1000);
+    });
+
+    function simulateProgress(sessionId, progressFill, progressText) {
+        const steps = [
+            { progress: 10, text: "Scraping Spotify playlist...", step: 1 },
+            { progress: 30, text: "Playlist data ophalen...", step: 1 },
+            { progress: 50, text: "Tracks analyseren...", step: 1 },
+            { progress: 60, text: "Verbinden met AI...", step: 2 },
+            { progress: 75, text: "Muzieksmaak analyseren...", step: 2 },
+            { progress: 85, text: "Aanbeveling genereren...", step: 3 },
+            { progress: 95, text: "Resultaat samenstellen...", step: 3 }
+        ];
+
+        let currentStep = 0;
+
+        function updateStep() {
+            if (currentStep < steps.length) {
+                const step = steps[currentStep];
+                progressFill.style.width = step.progress + '%';
+                progressText.textContent = step.text;
+
+                // Update step indicators
+                updateStepIndicators(step.step);
+
+                currentStep++;
+
+                // Random interval between 1-3 seconds for more natural feel
+                const interval = 1000 + Math.random() * 2000;
+                setTimeout(updateStep, interval);
+            }
+        }
+
+        updateStep();
+    }
+
+    function updateStepIndicators(currentStep) {
+        for (let i = 1; i <= 3; i++) {
+            const stepElement = document.getElementById('step' + i);
+            const icon = stepElement.querySelector('i');
+
+            if (i < currentStep) {
+                // Completed step
+                stepElement.className = 'progress-step completed';
+                icon.className = 'fas fa-check-circle text-success';
+            } else if (i === currentStep) {
+                // Active step
+                stepElement.className = 'progress-step active';
+                icon.className = 'fas fa-spinner fa-spin text-primary';
+            } else {
+                // Pending step
+                stepElement.className = 'progress-step';
+                icon.className = 'far fa-circle';
+            }
+        }
+    }
+
+    // Fallback: hide loading if page reloads (form submission completed)
+    window.addEventListener('load', function() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
+        if (analyzeBtn) {
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<i class="fas fa-search me-2"></i>Ontdek Nieuwe Muziek';
+        }
+    });
+</script>
+</body>
+</html>
