@@ -11,11 +11,17 @@ import java.util.function.Consumer;
 public class SimpleOllamaService {
 
     private final HttpClient httpClient;
-    private final String ollamaUrl;
+    private final String groqUrl;
+    private final String groqApiKey;
 
     public SimpleOllamaService() {
         this.httpClient = HttpClient.newHttpClient();
-        this.ollamaUrl = "http://localhost:11434/api/generate";
+        this.groqUrl = "https://api.groq.com/openai/v1/chat/completions";
+        // Haal de API key uit environment variable of configuratie
+        this.groqApiKey = System.getenv("GROQ_API_KEY");
+        if (this.groqApiKey == null || this.groqApiKey.isEmpty()) {
+            throw new IllegalStateException("GROQ_API_KEY environment variable is not set");
+        }
     }
 
     public String getDiscoveryRecommendation(String jsonPlaylist) {
@@ -27,15 +33,25 @@ public class SimpleOllamaService {
             progressCallback.accept("Playlist data voorbereiden...");
             String prompt = buildDiscoveryPrompt(jsonPlaylist);
 
+            // Groq gebruikt OpenAI-compatible API format
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("model", "mistral");
-            requestBody.addProperty("prompt", prompt);
-            requestBody.addProperty("stream", false);
+            requestBody.addProperty("model", "mixtral-8x7b-32768"); // Groq's Mixtral model
 
-            progressCallback.accept("Verbinden met AI...");
+            JsonArray messages = new JsonArray();
+            JsonObject message = new JsonObject();
+            message.addProperty("role", "user");
+            message.addProperty("content", prompt);
+            messages.add(message);
+
+            requestBody.add("messages", messages);
+            requestBody.addProperty("temperature", 0.7);
+            requestBody.addProperty("max_tokens", 1024);
+
+            progressCallback.accept("Verbinden met Groq AI...");
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(ollamaUrl))
+                    .uri(URI.create(groqUrl))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + groqApiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                     .timeout(Duration.ofSeconds(60))
                     .build();
@@ -45,7 +61,10 @@ public class SimpleOllamaService {
 
             progressCallback.accept("Resultaat verwerken...");
             JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
-            String aiResponse = responseJson.get("response").getAsString();
+            JsonArray choices = responseJson.getAsJsonArray("choices");
+            String aiResponse = choices.get(0).getAsJsonObject()
+                    .getAsJsonObject("message")
+                    .get("content").getAsString();
 
             progressCallback.accept("Aanbeveling samenvatten...");
             return formatDiscoveryResponse(aiResponse);
@@ -53,7 +72,7 @@ public class SimpleOllamaService {
         } catch (Exception e) {
             progressCallback.accept("Fout opgetreden");
             return "❌ Kon geen ontdekkingsaanbeveling genereren: " + e.getMessage() +
-                    "\n\n💡 Controleer of Ollama draait op localhost:11434";
+                    "\n\n💡 Controleer of de GROQ_API_KEY environment variable correct is ingesteld";
         }
     }
 
