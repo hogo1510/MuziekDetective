@@ -65,7 +65,7 @@ public class GroqService {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("model", MODEL);
             requestBody.add("messages", messages);
-            requestBody.addProperty("temperature", 0.8);
+            requestBody.addProperty("temperature", 0.3);
 
             progressCallback.accept("Verbinden met AI...");
             HttpRequest request = HttpRequest.newBuilder()
@@ -112,6 +112,9 @@ public class GroqService {
                 "- Het moet dezelfde muziekstijl, sfeer of vibe hebben als de playlist\n" +
                 "- Het moet een nummer zijn dat mensen die deze playlist leuk vinden, waarschijnlijk ook leuk zullen vinden\n" +
                 "- Kies voor verrassing en ontdekking, niet voor de meest voor de hand liggende keuze\n\n" +
+                "BELANGRIJKSTE REGEL: de artiestnaam moet feitelijk correct zijn. Verzin nooit een artiest bij een titel " +
+                "en raad niet als je het niet zeker weet. Kies liever een iets bekendere combinatie waarvan je zeker " +
+                "weet dat titel en artiest bij elkaar horen, dan een obscure combinatie die je gokt.\n\n" +
                 "Geef je antwoord in dit format:\n" +
                 "ONTDEKKING: [titel] - [artiest]\n\n" +
                 "STIJL: [muziekstijl/genre]\n\n" +
