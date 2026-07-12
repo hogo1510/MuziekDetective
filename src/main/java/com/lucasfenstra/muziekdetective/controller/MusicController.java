@@ -1,7 +1,7 @@
 package com.lucasfenstra.muziekdetective.controller;
 
 import com.lucasfenstra.muziekdetective.scraper.playlistDataScraper;
-import com.lucasfenstra.muziekdetective.service.SimpleOllamaService;
+import com.lucasfenstra.muziekdetective.service.GroqService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,13 +36,13 @@ public class MusicController {
         try {
             progressUpdates.put(sessionId, "Initialiseren scraper...");
             playlistDataScraper scraper = new playlistDataScraper();
-            SimpleOllamaService ollamaService = new SimpleOllamaService();
+            GroqService groqService = new GroqService();
 
             progressUpdates.put(sessionId, "Scraping Spotify playlist...");
             String jsonResult = scraper.scrapeSpotifyPlaylist(playlistUrl);
 
             progressUpdates.put(sessionId, "Analyseren playlist met AI...");
-            String discovery = ollamaService.getDiscoveryRecommendation(jsonResult);
+            String discovery = groqService.getDiscoveryRecommendation(jsonResult);
 
             progressUpdates.put(sessionId, "Voltooid!");
             redirectAttributes.addFlashAttribute("discovery", discovery);

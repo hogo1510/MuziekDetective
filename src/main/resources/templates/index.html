@@ -1,391 +1,518 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="nl" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muziek Detective - Ontdek Nieuwe Muziek</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Muziek Detective — Ontdek nieuwe muziek</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --ink: #12151c;
+            --paper: #f3eee4;
+            --paper-dim: #e9e1d0;
+            --text: #1e2430;
+            --text-muted: #5b6270;
+            --text-inverse: #ede9de;
+            --text-inverse-muted: #8b91a1;
+            --accent: #2f6e62;
+            --accent-strong: #1f4d45;
+            --danger: #b23a2e;
+            --border: #d8cfba;
+            --border-dark: #2a3040;
+            --font-display: 'Oswald', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--ink);
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-inverse);
+            font-family: var(--font-body);
+            -webkit-font-smoothing: antialiased;
         }
-        .main-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+
+        a { color: inherit; }
+
+        .page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 56px 24px 32px;
         }
-        .discovery-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border-radius: 15px;
-            border: none;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 25px;
-            padding: 12px 30px;
-            font-weight: 600;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        .btn-primary:disabled {
-            opacity: 0.7;
-            transform: none;
-        }
-        .spotify-input {
-            border-radius: 15px;
-            border: 2px solid #e9ecef;
-            padding: 15px 20px;
-            font-size: 16px;
-        }
-        .spotify-input:focus {
-            border-color: #764ba2;
-            box-shadow: 0 0 0 0.2rem rgba(118, 75, 162, 0.25);
-        }
-        .music-icon {
-            font-size: 3rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        .loading-content {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-        }
-        .progress-container {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .progress-bar {
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 4px;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        .progress-steps {
-            margin-top: 15px;
-        }
-        .progress-step {
+
+        /* Masthead */
+        .masthead {
             display: flex;
-            align-items: center;
-            margin: 10px 0;
-            opacity: 0.5;
-            transition: opacity 0.3s ease;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            padding-bottom: 20px;
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--border-dark);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-inverse-muted);
         }
-        .progress-step.active {
-            opacity: 1;
+
+        .masthead__kicker { color: var(--text-inverse); font-weight: 600; }
+
+        /* Dossier tab + panel */
+        .dossier__tab {
+            display: inline-block;
+            margin: 0 0 -1px 32px;
+            padding: 7px 18px;
+            background: var(--paper-dim);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border-radius: 4px 4px 0 0;
+            transform: rotate(-1deg);
+            position: relative;
+            z-index: 1;
+        }
+
+        .dossier__panel {
+            position: relative;
+            z-index: 2;
+            background: var(--paper);
+            color: var(--text);
+            border-radius: 2px 10px 10px 10px;
+            padding: 56px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .dossier__title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 2.4rem;
+            letter-spacing: 0.01em;
+            margin: 0 0 16px;
+            color: var(--text);
+        }
+
+        .dossier__intro {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+            max-width: 46ch;
+            margin: 0 0 36px;
+        }
+
+        .dossier__hint {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin: 20px 0 0;
+        }
+
+        /* Notices */
+        .notice {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 12px 16px;
+            border-left: 3px solid;
+            margin: 0 0 28px;
+        }
+
+        .notice--ok {
+            border-color: var(--accent);
+            background: rgba(47, 110, 98, 0.08);
+            color: var(--accent-strong);
+        }
+
+        .notice--error {
+            border-color: var(--danger);
+            background: rgba(178, 58, 46, 0.08);
+            color: var(--danger);
+        }
+
+        /* Form */
+        .case-form__label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .case-form__row {
+            display: flex;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .case-form__input {
+            flex: 1 1 auto;
+            min-width: 0;
+            border: none;
+            border-bottom: 2px solid var(--border);
+            background: transparent;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: var(--text);
+            padding: 14px 4px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .case-form__input::placeholder { color: #a9a191; }
+
+        .case-form__input:focus { border-color: var(--accent); }
+
+        .case-form__submit {
+            flex: 0 0 auto;
+            border: none;
+            background: var(--ink);
+            color: var(--text-inverse);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0 28px;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: background-color 0.2s ease;
+        }
+
+        .case-form__submit:hover:not(:disabled) { background: var(--accent); }
+
+        .case-form__submit:disabled {
+            background: var(--border);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .case-form__progress {
+            height: 2px;
+            background: var(--border);
+            margin-top: -2px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .case-form__progress.is-active { display: block; }
+
+        .case-form__progress-fill {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width 0.4s ease;
+        }
+
+        .case-log {
+            list-style: none;
+            margin: 18px 0 0;
+            padding: 0;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            max-height: 160px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .case-log.is-active { display: block; }
+
+        .case-log li {
+            display: flex;
+            gap: 14px;
+            padding: 5px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .case-log li:last-child { border-bottom: none; }
+
+        .case-log__time { color: var(--accent); flex: 0 0 auto; }
+
+        /* Result */
+        .result {
+            position: relative;
+            background: var(--paper);
+            color: var(--text);
+            border-radius: 2px 10px 10px 10px;
+            padding: 48px 56px;
+            margin-top: 32px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .result__stamp {
+            position: absolute;
+            top: 28px;
+            right: 28px;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 2px;
+            transform: rotate(-8deg);
+        }
+
+        .result__heading {
+            font-family: var(--font-display);
             font-weight: 600;
+            font-size: 1.05rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 0 0 20px;
         }
-        .progress-step.completed {
-            opacity: 1;
-            color: #28a745;
+
+        .result__body {
+            font-family: var(--font-mono);
+            font-size: 0.98rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            background: var(--paper-dim);
+            padding: 24px;
+            border-radius: 2px;
+            margin: 0 0 20px;
         }
-        .progress-step i {
-            margin-right: 10px;
-            width: 20px;
+
+        .result__note {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
         }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 2s linear infinite;
-            margin: 0 auto 20px;
+
+        /* Trail (real pipeline steps: scrape -> analyze -> recommend) */
+        .trail {
+            display: flex;
+            gap: 32px;
+            margin-top: 56px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border-dark);
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .trail__step { flex: 1; }
+
+        .trail__index {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 10px;
         }
-        .pulse {
-            animation: pulse 2s infinite;
+
+        .trail__step h3 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.05rem;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: var(--text-inverse);
+            margin: 0 0 8px;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+
+        .trail__step p {
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: var(--text-inverse-muted);
+            margin: 0;
+        }
+
+        .colophon {
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-inverse-muted);
+            padding: 48px 0 8px;
+        }
+
+        /* Motion — orchestrated, and only where motion is welcome */
+        @media (prefers-reduced-motion: no-preference) {
+            .dossier__panel { animation: panel-in 0.5s ease-out; }
+            .result { animation: panel-in 0.45s ease-out; }
+            .result__stamp {
+                animation: stamp-hit 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+            }
+        }
+
+        @keyframes panel-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes stamp-hit {
+            0% { opacity: 0; transform: scale(2.1) rotate(-20deg); }
+            70% { opacity: 1; transform: scale(0.92) rotate(-6deg); }
+            100% { opacity: 1; transform: scale(1) rotate(-8deg); }
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 640px) {
+            .masthead { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .dossier__panel, .result { padding: 32px 24px; }
+            .dossier__title { font-size: 1.9rem; }
+            .case-form__row { flex-direction: column; }
+            .case-form__submit { padding: 14px; }
+            .trail { flex-direction: column; gap: 24px; }
+            .result__stamp { position: static; display: inline-block; margin-bottom: 16px; }
         }
     </style>
 </head>
 <body>
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-content">
-        <div class="spinner"></div>
-        <h4 class="mb-3">Je muziek aan het analyseren...</h4>
+<div class="page">
+    <header class="masthead">
+        <span class="masthead__kicker">Muziek Detective — Dossier</span>
+        <span id="caseNumber">Zaak nr. —</span>
+    </header>
 
-        <div class="progress-container">
-            <div class="progress-bar">
-                <div id="progressFill" class="progress-fill"></div>
+    <main class="dossier">
+        <div class="dossier__tab">Onderzoek</div>
+        <section class="dossier__panel">
+            <h1 class="dossier__title">Muziek Detective</h1>
+            <p class="dossier__intro">
+                Plak de link van je Spotify-playlist. Wij ontleden het patroon erachter en leggen
+                één nummer voor dat er feilloos bij past.
+            </p>
+
+            <div th:if="${success}" class="notice notice--ok">Playlist succesvol geanalyseerd.</div>
+            <div th:if="${error}" class="notice notice--error" th:text="${error}"></div>
+
+            <form id="playlistForm" th:action="@{/analyze}" method="post">
+                <label class="case-form__label" for="playlistUrl">Bewijsstuk — playlist-URL</label>
+                <div class="case-form__row">
+                    <input type="url"
+                           class="case-form__input"
+                           name="playlistUrl"
+                           id="playlistUrl"
+                           placeholder="https://open.spotify.com/playlist/..."
+                           required
+                           th:value="${playlistUrl}">
+                    <button type="submit" class="case-form__submit" id="analyzeBtn">Start onderzoek</button>
+                </div>
+                <div class="case-form__progress" id="progressRule"><span class="case-form__progress-fill" id="progressFill"></span></div>
+            </form>
+
+            <ul class="case-log" id="caseLog" aria-live="polite"></ul>
+
+            <p class="dossier__hint">
+                Playlist-URL kopiëren: open je playlist in Spotify → "···" → Delen → Playlist link kopiëren.
+            </p>
+        </section>
+
+        <section th:if="${discovery}" class="result">
+            <span class="result__stamp">Zaak opgelost</span>
+            <h2 class="result__heading">Onderzoeksresultaat</h2>
+            <pre class="result__body" th:text="${discovery}"></pre>
+            <p class="result__note">Zoek dit nummer op in Spotify om het meteen te beluisteren.</p>
+        </section>
+
+        <section class="trail">
+            <div class="trail__step">
+                <span class="trail__index">01 — Onderschept</span>
+                <h3>Playlist opgehaald</h3>
+                <p>We halen de volledige tracklist rechtstreeks bij Spotify op.</p>
             </div>
-            <div id="progressText" class="mt-2 text-muted">Initialiseren...</div>
-
-            <div class="progress-steps">
-                <div id="step1" class="progress-step">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Scraping Spotify playlist</span>
-                </div>
-                <div id="step2" class="progress-step">
-                    <i class="far fa-circle"></i>
-                    <span>Analyseren met AI</span>
-                </div>
-                <div id="step3" class="progress-step">
-                    <i class="far fa-circle"></i>
-                    <span>Aanbeveling genereren</span>
-                </div>
+            <div class="trail__step">
+                <span class="trail__index">02 — Ontleed</span>
+                <h3>Patroon blootgelegd</h3>
+                <p>Mistral AI analyseert genre, sfeer en tempo van je smaak.</p>
             </div>
-        </div>
+            <div class="trail__step">
+                <span class="trail__index">03 — Geïdentificeerd</span>
+                <h3>Match voorgelegd</h3>
+                <p>Eén nummer dat erbij past — nog onbekend, gegarandeerd raak.</p>
+            </div>
+        </section>
+    </main>
 
-        <small class="text-muted">
-            <i class="fas fa-info-circle me-1"></i>
-            Dit kan even duren... We halen je playlist op en analyseren deze met AI.
-        </small>
-    </div>
+    <footer class="colophon">Muziek Detective — Spring Boot &amp; Groq</footer>
 </div>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10">
-            <!-- Header Card -->
-            <div class="main-card p-5 mb-4">
-                <div class="text-center mb-4">
-                    <i class="fas fa-music music-icon mb-3 pulse"></i>
-                    <h1 class="display-5 fw-bold text-dark">Muziek Detective</h1>
-                    <p class="lead text-muted">
-                        Plak je Spotify playlist URL en ontdek nieuwe muziek die perfect bij je smaak past!
-                    </p>
-                </div>
-
-                <!-- Flash Messages -->
-                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <span th:text="${success ? 'Playlist succesvol geanalyseerd!' : ''}"></span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-
-                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <span th:text="${error}"></span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-
-                <!-- Input Form -->
-                <form id="playlistForm" th:action="@{/analyze}" method="post" class="mb-4">
-                    <div class="input-group mb-3">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="fab fa-spotify text-success"></i>
-                            </span>
-                        <input type="url"
-                               class="form-control spotify-input border-start-0"
-                               name="playlistUrl"
-                               id="playlistUrl"
-                               placeholder="https://open.spotify.com/playlist/..."
-                               required
-                               th:value="${playlistUrl}">
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg" id="analyzeBtn">
-                            <i class="fas fa-search me-2"></i>
-                            Ontdek Nieuwe Muziek
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Help Text -->
-                <div class="text-center">
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Hoe krijg ik een playlist URL? Ga naar je Spotify playlist, klik op "..." → "Delen" → "Playlist link kopiëren"
-                    </small>
-                </div>
-            </div>
-
-            <!-- Discovery Result -->
-            <div th:if="${discovery}" class="main-card p-4">
-                <div class="discovery-card p-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-compass me-3 fa-2x"></i>
-                        <h3 class="mb-0">Je Muziek Ontdekking</h3>
-                    </div>
-
-                    <div class="bg-white text-dark rounded p-4">
-                        <pre th:text="${discovery}" class="mb-0" style="white-space: pre-wrap; font-family: inherit; font-size: 1.1em;"></pre>
-                    </div>
-
-                    <div class="mt-3 text-center">
-                        <small class="text-light">
-                            <i class="fas fa-lightbulb me-1"></i>
-                            Zoek dit nummer op Spotify om het direct te beluisteren!
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Features -->
-            <div class="row mt-4 text-center">
-                <div class="col-md-4 mb-3">
-                    <div class="main-card p-3 h-100">
-                        <i class="fas fa-robot text-primary fa-2x mb-2"></i>
-                        <h5>AI Aanbevelingen</h5>
-                        <p class="text-muted small">Mistral AI analyseert je playlist en vindt perfecte nieuwe nummers</p>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="main-card p-3 h-100">
-                        <i class="fas fa-surprise text-primary fa-2x mb-2"></i>
-                        <h5>Verrassende Ontdekkingen</h5>
-                        <p class="text-muted small">Ontdek artiesten en nummers die je nog niet kende maar wel leuk vindt</p>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="main-card p-3 h-100">
-                        <i class="fas fa-bolt text-primary fa-2x mb-2"></i>
-                        <h5>Real-time Voortgang</h5>
-                        <p class="text-muted small">Zie live wat er gebeurt tijdens het analyseren</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<footer class="text-center text-white mt-5 pb-3">
-    <p class="mb-0">🎵 Muziek Detective - Powered by Spring Boot & Ollama</p>
-</footer>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    document.getElementById('playlistForm').addEventListener('submit', function(e) {
+    (function () {
+        var now = new Date();
+        var caseNo = now.getFullYear().toString()
+            + String(now.getMonth() + 1).padStart(2, '0')
+            + String(now.getDate()).padStart(2, '0');
+        document.getElementById('caseNumber').textContent = 'Zaak nr. ' + caseNo;
+    })();
+
+    var form = document.getElementById('playlistForm');
+    var btn = document.getElementById('analyzeBtn');
+    var progressRule = document.getElementById('progressRule');
+    var progressFill = document.getElementById('progressFill');
+    var caseLog = document.getElementById('caseLog');
+
+    form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
+        btn.disabled = true;
+        btn.textContent = 'Onderzoek loopt…';
+        progressRule.classList.add('is-active');
+        caseLog.classList.add('is-active');
+        caseLog.innerHTML = '';
 
-        // Disable button and show loading
-        analyzeBtn.disabled = true;
-        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyseren...';
-        loadingOverlay.style.display = 'flex';
-
-        // Generate session ID
-        const sessionId = Date.now().toString();
-
-        // Start progress simulation
-        simulateProgress(sessionId, progressFill, progressText);
-
-        // Submit form after a short delay to show loading
-        setTimeout(() => {
-            // Add session ID as hidden field
-            const sessionInput = document.createElement('input');
-            sessionInput.type = 'hidden';
-            sessionInput.name = 'sessionId';
-            sessionInput.value = sessionId;
-            this.appendChild(sessionInput);
-
-            this.submit();
-        }, 1000);
-    });
-
-    function simulateProgress(sessionId, progressFill, progressText) {
-        const steps = [
-            { progress: 10, text: "Scraping Spotify playlist...", step: 1 },
-            { progress: 30, text: "Playlist data ophalen...", step: 1 },
-            { progress: 50, text: "Tracks analyseren...", step: 1 },
-            { progress: 60, text: "Verbinden met AI...", step: 2 },
-            { progress: 75, text: "Muzieksmaak analyseren...", step: 2 },
-            { progress: 85, text: "Aanbeveling genereren...", step: 3 },
-            { progress: 95, text: "Resultaat samenstellen...", step: 3 }
+        var steps = [
+            { progress: 15, text: 'playlist onderschept' },
+            { progress: 35, text: 'tracklijst opgehaald' },
+            { progress: 55, text: 'sporen doorgestuurd naar AI' },
+            { progress: 70, text: 'muzieksmaak ontleed' },
+            { progress: 85, text: 'kandidaten afgewogen' },
+            { progress: 97, text: 'verdachte geïdentificeerd' }
         ];
 
-        let currentStep = 0;
+        var i = 0;
+        var start = Date.now();
 
-        function updateStep() {
-            if (currentStep < steps.length) {
-                const step = steps[currentStep];
-                progressFill.style.width = step.progress + '%';
-                progressText.textContent = step.text;
+        function next() {
+            if (i >= steps.length) return;
+            var step = steps[i];
+            progressFill.style.width = step.progress + '%';
 
-                // Update step indicators
-                updateStepIndicators(step.step);
+            var elapsedSec = Math.round((Date.now() - start) / 1000);
+            var mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+            var ss = String(elapsedSec % 60).padStart(2, '0');
 
-                currentStep++;
+            var li = document.createElement('li');
+            var time = document.createElement('span');
+            time.className = 'case-log__time';
+            time.textContent = mm + ':' + ss;
+            var label = document.createElement('span');
+            label.textContent = step.text;
+            li.appendChild(time);
+            li.appendChild(label);
+            caseLog.appendChild(li);
+            caseLog.scrollTop = caseLog.scrollHeight;
 
-                // Random interval between 1-3 seconds for more natural feel
-                const interval = 1000 + Math.random() * 2000;
-                setTimeout(updateStep, interval);
-            }
+            i++;
+            setTimeout(next, 700 + Math.random() * 900);
         }
 
-        updateStep();
-    }
+        next();
 
-    function updateStepIndicators(currentStep) {
-        for (let i = 1; i <= 3; i++) {
-            const stepElement = document.getElementById('step' + i);
-            const icon = stepElement.querySelector('i');
+        setTimeout(function () { form.submit(); }, 1000);
+    });
 
-            if (i < currentStep) {
-                // Completed step
-                stepElement.className = 'progress-step completed';
-                icon.className = 'fas fa-check-circle text-success';
-            } else if (i === currentStep) {
-                // Active step
-                stepElement.className = 'progress-step active';
-                icon.className = 'fas fa-spinner fa-spin text-primary';
-            } else {
-                // Pending step
-                stepElement.className = 'progress-step';
-                icon.className = 'far fa-circle';
-            }
-        }
-    }
-
-    // Fallback: hide loading if page reloads (form submission completed)
-    window.addEventListener('load', function() {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-        }
-        if (analyzeBtn) {
-            analyzeBtn.disabled = false;
-            analyzeBtn.innerHTML = '<i class="fas fa-search me-2"></i>Ontdek Nieuwe Muziek';
-        }
+    window.addEventListener('pageshow', function () {
+        btn.disabled = false;
+        btn.textContent = 'Start onderzoek';
+        progressRule.classList.remove('is-active');
+        caseLog.classList.remove('is-active');
+        progressFill.style.width = '0%';
     });
 </script>
 </body>
