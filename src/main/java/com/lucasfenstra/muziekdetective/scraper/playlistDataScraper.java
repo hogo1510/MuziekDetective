@@ -36,8 +36,15 @@ public class playlistDataScraper {
     }
 
     public String scrapeSpotifyPlaylist(String playlistUrl) throws Exception {
-        // WebDriverManager setup - dit download automatisch de juiste ChromeDriver
-        WebDriverManager.chromedriver().setup();
+        // In containers (Docker/Railway) gebruiken we de vooraf geïnstalleerde chromedriver
+        // (zie Dockerfile: CHROMEDRIVER_BIN). Lokaal valt dit terug op WebDriverManager,
+        // die de juiste driver automatisch download.
+        String chromeDriverBin = System.getenv("CHROMEDRIVER_BIN");
+        if (chromeDriverBin != null && !chromeDriverBin.isBlank()) {
+            System.setProperty("webdriver.chrome.driver", chromeDriverBin);
+        } else {
+            WebDriverManager.chromedriver().setup();
+        }
 
         WebDriver driver = null;
         List<Track> tracks = new ArrayList<>();
@@ -45,6 +52,10 @@ public class playlistDataScraper {
         try {
             // Chrome options voor headless browsing
             ChromeOptions options = new ChromeOptions();
+            String chromeBin = System.getenv("CHROME_BIN");
+            if (chromeBin != null && !chromeBin.isBlank()) {
+                options.setBinary(chromeBin);
+            }
             options.addArguments("--headless=new"); // Headless mode
             options.addArguments("--disable-blink-features=AutomationControlled");
             options.addArguments("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
