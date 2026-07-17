@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muziek Detective — Ontdek nieuwe muziek</title>
+    <title>Muziek Detective: Ontdek nieuwe muziek</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -336,7 +336,7 @@
             padding: 48px 0 8px;
         }
 
-        /* Motion — orchestrated, and only where motion is welcome */
+        /* Motion orchestrated, and only where motion is welcome */
         @media (prefers-reduced-motion: no-preference) {
             .dossier__panel { animation: panel-in 0.5s ease-out; }
             .result { animation: panel-in 0.45s ease-out; }
@@ -375,7 +375,7 @@
 <body>
 <div class="page">
     <header class="masthead">
-        <span class="masthead__kicker">Muziek Detective — Dossier</span>
+        <span class="masthead__kicker">Muziek Detective Dossier</span>
         <span id="caseNumber">Zaak nr. —</span>
     </header>
 
@@ -392,7 +392,7 @@
             <div th:if="${error}" class="notice notice--error" th:text="${error}"></div>
 
             <form id="playlistForm" th:action="@{/analyze}" method="post">
-                <label class="case-form__label" for="playlistUrl">Bewijsstuk — playlist-URL</label>
+                <label class="case-form__label" for="playlistUrl">Bewijsstuk: playlist-URL</label>
                 <div class="case-form__row">
                     <input type="url"
                            class="case-form__input"
@@ -429,17 +429,17 @@
             <div class="trail__step">
                 <span class="trail__index">02 — Ontleed</span>
                 <h3>Patroon blootgelegd</h3>
-                <p>Mistral AI analyseert genre, sfeer en tempo van je smaak.</p>
+                <p>AI analyseert genre, sfeer en tempo van je smaak.</p>
             </div>
             <div class="trail__step">
                 <span class="trail__index">03 — Geïdentificeerd</span>
                 <h3>Match voorgelegd</h3>
-                <p>Eén nummer dat erbij past — nog onbekend, gegarandeerd raak.</p>
+                <p>Eén nummer dat erbij past. nog onbekend, gegarandeerd raak.</p>
             </div>
         </section>
     </main>
 
-    <footer class="colophon">Muziek Detective — Spring Boot &amp; Groq</footer>
+    <footer class="colophon">Muziek Detective</footer>
 </div>
 
 <script>

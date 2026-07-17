@@ -2,6 +2,8 @@ package com.lucasfenstra.muziekdetective.controller;
 
 import com.lucasfenstra.muziekdetective.scraper.playlistDataScraper;
 import com.lucasfenstra.muziekdetective.service.GroqService;
+import com.lucasfenstra.muziekdetective.service.RateLimiter;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MusicController {
 
     private final Map<String, String> progressUpdates = new ConcurrentHashMap<>();
+    private final RateLimiter analyzeRateLimiter = new RateLimiter(5, Duration.ofMinutes(10));
 
     @GetMapping("/")
     public String home(Model model) {
@@ -28,7 +32,15 @@ public class MusicController {
     @PostMapping("/analyze")
     public String analyzePlaylist(
             @RequestParam("playlistUrl") String playlistUrl,
+            HttpServletRequest request,
             RedirectAttributes redirectAttributes) {
+
+        if (!analyzeRateLimiter.tryAcquire(getClientIp(request))) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Je hebt het maximum van 5 analyses per 10 minuten bereikt. Probeer het straks opnieuw.");
+            redirectAttributes.addFlashAttribute("success", false);
+            return "redirect:/";
+        }
 
         String sessionId = java.util.UUID.randomUUID().toString();
         progressUpdates.put(sessionId, "Starten...");
@@ -60,6 +72,14 @@ public class MusicController {
         }
 
         return "redirect:/";
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @GetMapping("/progress")
