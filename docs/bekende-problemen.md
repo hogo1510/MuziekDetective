@@ -1,0 +1,54 @@
+# Bekende problemen
+
+Stand van zaken op 2026-11-22 (commit `b9f54a4`). Werk dit bestand bij zodra iets is opgelost of er iets nieuws gevonden wordt.
+
+## 1. Scraper haalt maar ~25-30 nummers op
+
+**Bestand:** `scraper/playlistDataScraper.java` (`scrollToBottom`, regel ~148)
+
+Spotify's webspeler gebruikt een **gevirtualiseerde lijst**: alleen de rijen die (bijna) in beeld zijn bestaan in de DOM. Daarnaast:
+
+- `scrollToBottom` scrollt `window`, maar op Spotify scrollt een binnenste container, niet het venster. Het scrollen doet dus niets en alleen de eerste batch rijen wordt ooit geladen.
+- Zelfs als het scrollen wel werkt, verwijdert Spotify rijen die uit beeld raken. Alle rijen pas ná het scrollen ophalen geeft dan alleen de laatste batch.
+
+**Mogelijke oplossingen:**
+- Beste: de **Spotify Web API** gebruiken (`GET /playlists/{id}/items`, gepagineerd per 100). Geen browser nodig, sneller en betrouwbaarder. Vereist een Spotify developer-app (client credentials). Let op: Spotify heeft de API voor nieuwe apps beperkt, onder andere geen toegang meer tot Spotify's eigen redactionele/algoritmische playlists. Gebruikersplaylists werken wel.
+- Als Selenium moet blijven: de juiste scroll-container scrollen en **tijdens** het scrollen rijen verzamelen (dedupliceren op `aria-rowindex` of positie) tot het aantal niet meer groeit.
+
+## 2. AI-aanbevelingen zijn matig of verzonnen
+
+**Bestand:** `service/GroqService.java`
+
+- Model `llama-3.3-70b-versatile` verzint regelmatig titel/artiest-combinaties (daarom staat er al een "verzin niets"-regel in de prompt, wat in de praktijk weinig helpt).
+- Er is geen controle of het aangeraden nummer echt bestaat, en ook niet of het niet al in de playlist staat.
+
+**Mogelijke oplossingen:** sterker model, en de suggestie verifiëren via een zoekopdracht (bijv. Spotify Search API). Laat het model meerdere kandidaten geven en kies de eerste die echt bestaat en niet in de playlist staat.
+
+## 3. Fouten worden als succes getoond
+
+- De scraper vangt alle exceptions af en geeft dan een lege lijst terug (`total_tracks: 0`). De AI krijgt een lege playlist en raadt dan maar wat.
+- `GroqService` vangt fouten af en geeft een foutmelding terug als gewone tekst. De controller zet dan `success=true`, dus de UI toont "Playlist succesvol geanalyseerd" boven een foutmelding.
+
+## 4. Nep-tekst als het antwoordformaat afwijkt
+
+`formatDiscoveryResponse` / `extractValue` vullen bij een afwijkend AI-antwoord **hardgecodeerde zinnen** in ("Dit nummer past perfect bij je muzieksmaak..."). De echte inhoud van het antwoord gaat dan verloren. Beter: gestructureerde output (JSON) vragen aan het model.
+
+## 5. `/progress`-endpoint wordt niet gebruikt
+
+De controller maakt een `sessionId` aan, maar stuurt die nooit naar de browser. De voortgangsbalk in `index.html` is een **getimede animatie** en volgt het echte werk niet. Het endpoint en de `progressUpdates`-map zijn in feite dode code.
+
+## 6. Traag: tot 30 s wachten op een cookie-knop
+
+De scraper wacht tot 30 seconden op een "Accept"-cookieknop. In headless/niet-EU-omgevingen verschijnt die vaak niet, dus elke analyse verliest dan die tijd. Daarna nog eens 5 × 2 s scrollen. Ook wordt per verzoek een nieuwe Chrome gestart.
+
+## 7. Rate limiter
+
+- Gebruikt het eerste IP in `X-Forwarded-For`. Dat deel kan een client zelf meesturen, dus de limiet is te omzeilen. Achter Railway's proxy is het laatste door de proxy toegevoegde IP betrouwbaarder.
+- De map met tijdstempels wordt nooit opgeruimd en groeit dus met elk nieuw IP.
+
+## 8. Overig
+
+- Klassenaam `playlistDataScraper` volgt de Java-conventie niet (`PlaylistDataScraper`).
+- Services worden per verzoek met `new` gemaakt in plaats van als Spring beans geïnjecteerd.
+- Logging gaat via `System.out`/`System.err` in plaats van een logger.
+- Er zijn geen echte tests: alleen `contextLoads`.
