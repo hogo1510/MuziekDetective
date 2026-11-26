@@ -11,7 +11,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import io.github.bonigarcia.wdm.WebDriverManager;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -35,15 +34,33 @@ public class playlistDataScraper {
         public int getPosition() { return position; }
     }
 
+    /**
+     * Pad naar de browser: CHROME_BIN als die gezet is, anders de eerste gevonden
+     * Chromium/Chrome. Zo kiest Selenium Manager een driver voor precies die versie
+     * (anders pakt hij de nieuwste chromedriver, die niet bij Chromium hoeft te passen).
+     */
+    private static String findChromeBinary() {
+        String chromeBin = System.getenv("CHROME_BIN");
+        if (chromeBin != null && !chromeBin.isBlank()) {
+            return chromeBin;
+        }
+        for (String path : List.of("/usr/bin/chromium-browser", "/usr/bin/chromium",
+                "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable")) {
+            if (java.nio.file.Files.isExecutable(java.nio.file.Path.of(path))) {
+                return path;
+            }
+        }
+        return null; // Selenium Manager zoekt zelf
+    }
+
     public String scrapeSpotifyPlaylist(String playlistUrl) throws Exception {
         // In containers (Docker/Railway) gebruiken we de vooraf geïnstalleerde chromedriver
-        // (zie Dockerfile: CHROMEDRIVER_BIN). Lokaal valt dit terug op WebDriverManager,
-        // die de juiste driver automatisch download.
+        // (zie Dockerfile: CHROMEDRIVER_BIN). Lokaal regelt Selenium Manager (ingebouwd in
+        // Selenium) zelf een chromedriver die past bij de browserversie van CHROME_BIN of
+        // de automatisch gevonden Chromium/Chrome.
         String chromeDriverBin = System.getenv("CHROMEDRIVER_BIN");
         if (chromeDriverBin != null && !chromeDriverBin.isBlank()) {
             System.setProperty("webdriver.chrome.driver", chromeDriverBin);
-        } else {
-            WebDriverManager.chromedriver().setup();
         }
 
         WebDriver driver = null;
@@ -52,8 +69,8 @@ public class playlistDataScraper {
         try {
             // Chrome options voor headless browsing
             ChromeOptions options = new ChromeOptions();
-            String chromeBin = System.getenv("CHROME_BIN");
-            if (chromeBin != null && !chromeBin.isBlank()) {
+            String chromeBin = findChromeBinary();
+            if (chromeBin != null) {
                 options.setBinary(chromeBin);
             }
             options.addArguments("--headless=new"); // Headless mode
@@ -68,7 +85,6 @@ public class playlistDataScraper {
             driver = new ChromeDriver(options);
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
-            System.out.println("WebDriverManager heeft ChromeDriver geïnstalleerd");
             System.out.println("Navigeren naar Spotify playlist: " + playlistUrl);
 
             driver.get(playlistUrl);

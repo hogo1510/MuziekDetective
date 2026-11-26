@@ -1,27 +1,28 @@
 package com.lucasfenstra.muziekdetective.service;
 
-import com.google.gson.*;
+import com.anthropic.client.AnthropicClient;
+import com.anthropic.client.okhttp.AnthropicOkHttpClient;
+import com.anthropic.models.messages.ContentBlock;
+import com.anthropic.models.messages.Message;
+import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.StopReason;
+
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-public class GroqService {
+public class ClaudeService {
 
-    private static final String GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String MODEL = "llama-3.3-70b-versatile";
+    private static final String API_KEY_NAME = "ANTHROPIC_API_KEY";
+    private static final String MODEL = "claude-haiku-5-5";
 
-    private final HttpClient httpClient;
     private final String apiKey;
 
-    public GroqService() {
-        this.httpClient = HttpClient.newHttpClient();
-        String key = System.getenv("GROQ_API_KEY");
+    public ClaudeService() {
+        String key = System.getenv(API_KEY_NAME);
         this.apiKey = (key != null && !key.isBlank()) ? key : readKeyFromDotEnv();
     }
 
@@ -33,8 +34,8 @@ public class GroqService {
         try {
             for (String line : Files.readAllLines(envFile)) {
                 String trimmed = line.trim();
-                if (trimmed.startsWith("GROQ_API_KEY=")) {
-                    return trimmed.substring("GROQ_API_KEY=".length()).trim();
+                if (trimmed.startsWith(API_KEY_NAME + "=")) {
+                    return trimmed.substring((API_KEY_NAME + "=").length()).trim();
                 }
             }
         } catch (IOException ignored) {
@@ -49,47 +50,42 @@ public class GroqService {
     public String getDiscoveryRecommendation(String jsonPlaylist, Consumer<String> progressCallback) {
         try {
             if (apiKey == null || apiKey.isBlank()) {
-                throw new IllegalStateException("GROQ_API_KEY omgevingsvariabele ontbreekt");
+                throw new IllegalStateException(API_KEY_NAME + " ontbreekt (zet hem in de omgeving of in .env)");
             }
 
             progressCallback.accept("Playlist data voorbereiden...");
             String prompt = buildDiscoveryPrompt(jsonPlaylist);
 
-            JsonObject message = new JsonObject();
-            message.addProperty("role", "user");
-            message.addProperty("content", prompt);
+            AnthropicClient client = AnthropicOkHttpClient.builder()
+                    .apiKey(apiKey)
+                    .build();
 
-            JsonArray messages = new JsonArray();
-            messages.add(message);
-
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("model", MODEL);
-            requestBody.add("messages", messages);
-            requestBody.addProperty("temperature", 0.3);
-
-            progressCallback.accept("Verbinden met AI...");
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GROQ_URL))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                    .timeout(Duration.ofSeconds(60))
+            MessageCreateParams params = MessageCreateParams.builder()
+                    .model(MODEL)
+                    .maxTokens(16000L)
+                    .outputConfig(OutputConfig.builder()
+                            .effort(OutputConfig.Effort.MEDIUM)
+                            .build())
+                    .addUserMessage(prompt)
                     .build();
 
             progressCallback.accept("AI analyseert je muzieksmaak...");
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            Message response = client.messages().create(params);
 
-            JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
-            if (responseJson.has("error")) {
-                String message1 = responseJson.getAsJsonObject("error").get("message").getAsString();
-                throw new RuntimeException(message1);
+            if (response.stopReason().map(StopReason.REFUSAL::equals).orElse(false)) {
+                throw new RuntimeException("Claude weigerde dit verzoek te beantwoorden");
             }
 
             progressCallback.accept("Resultaat verwerken...");
-            String aiResponse = responseJson.getAsJsonArray("choices")
-                    .get(0).getAsJsonObject()
-                    .getAsJsonObject("message")
-                    .get("content").getAsString();
+            String aiResponse = response.content().stream()
+                    .flatMap(block -> block.text().stream())
+                    .map(textBlock -> textBlock.text())
+                    .collect(Collectors.joining("\n"))
+                    .trim();
+
+            if (aiResponse.isEmpty()) {
+                throw new RuntimeException("Leeg antwoord van Claude");
+            }
 
             progressCallback.accept("Aanbeveling samenvatten...");
             return formatDiscoveryResponse(aiResponse);
@@ -97,7 +93,7 @@ public class GroqService {
         } catch (Exception e) {
             progressCallback.accept("Fout opgetreden");
             return "❌ Kon geen ontdekkingsaanbeveling genereren: " + e.getMessage() +
-                    "\n\n💡 Controleer of de GROQ_API_KEY omgevingsvariabele correct is ingesteld";
+                    "\n\n💡 Controleer of de " + API_KEY_NAME + " correct is ingesteld";
         }
     }
 
@@ -115,7 +111,7 @@ public class GroqService {
                 "BELANGRIJKSTE REGEL: de artiestnaam moet feitelijk correct zijn. Verzin nooit een artiest bij een titel " +
                 "en raad niet als je het niet zeker weet. Kies liever een iets bekendere combinatie waarvan je zeker " +
                 "weet dat titel en artiest bij elkaar horen, dan een obscure combinatie die je gokt.\n\n" +
-                "Geef je antwoord in dit format:\n" +
+                "Geef je antwoord in dit format, zonder extra tekst ervoor of erna:\n" +
                 "ONTDEKKING: [titel] - [artiest]\n\n" +
                 "STIJL: [muziekstijl/genre]\n\n" +
                 "REDEN: [leg in 2-3 zinnen uit waarom dit nummer perfect past bij de playlist en waarom het een goede ontdekking is]\n\n" +

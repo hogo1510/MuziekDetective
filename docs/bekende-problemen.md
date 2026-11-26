@@ -2,6 +2,12 @@
 
 Stand van zaken op 2026-11-22 (commit `b9f54a4`). Werk dit bestand bij zodra iets is opgelost of er iets nieuws gevonden wordt.
 
+## 0. ~~AI-model uitgefaseerd~~ (opgelost 2026-11-26)
+
+Opgelost door over te stappen op Claude (`claude-haiku-5-5`), zie werklog. Oorspronkelijke beschrijving:
+
+Groq heeft `llama-3.3-70b-versatile` uitgefaseerd: voor het free/developer-tier is het sinds 2026-08-16 uitgeschakeld. De aanroep faalt dan waarschijnlijk, en door probleem #3 ziet de gebruiker die fout als "succes". Groq noemt `openai/gpt-oss-120b` als vervanger. Zie de modelkeuze in [heropstart-verbeterplan.md](heropstart-verbeterplan.md#ai-model-kiezen).
+
 ## 1. Scraper haalt maar ~25-30 nummers op
 
 **Bestand:** `scraper/playlistDataScraper.java` (`scrollToBottom`, regel ~148)
@@ -17,9 +23,9 @@ Spotify's webspeler gebruikt een **gevirtualiseerde lijst**: alleen de rijen die
 
 ## 2. AI-aanbevelingen zijn matig of verzonnen
 
-**Bestand:** `service/GroqService.java`
+**Bestand:** `service/ClaudeService.java`
 
-- Model `llama-3.3-70b-versatile` verzint regelmatig titel/artiest-combinaties (daarom staat er al een "verzin niets"-regel in de prompt, wat in de praktijk weinig helpt).
+- Het oude model `llama-3.3-70b-versatile` verzon regelmatig titel/artiest-combinaties (daarom staat er een "verzin niets"-regel in de prompt). Sinds 2026-11-26 draait de app op `claude-haiku-5-5`; nog niet getest hoe vaak dat model nummers verzint.
 - Er is geen controle of het aangeraden nummer echt bestaat, en ook niet of het niet al in de playlist staat.
 
 **Mogelijke oplossingen:** sterker model, en de suggestie verifiëren via een zoekopdracht (bijv. Spotify Search API). Laat het model meerdere kandidaten geven en kies de eerste die echt bestaat en niet in de playlist staat.
@@ -27,7 +33,7 @@ Spotify's webspeler gebruikt een **gevirtualiseerde lijst**: alleen de rijen die
 ## 3. Fouten worden als succes getoond
 
 - De scraper vangt alle exceptions af en geeft dan een lege lijst terug (`total_tracks: 0`). De AI krijgt een lege playlist en raadt dan maar wat.
-- `GroqService` vangt fouten af en geeft een foutmelding terug als gewone tekst. De controller zet dan `success=true`, dus de UI toont "Playlist succesvol geanalyseerd" boven een foutmelding.
+- `ClaudeService` vangt fouten af en geeft een foutmelding terug als gewone tekst. De controller zet dan `success=true`, dus de UI toont "Playlist succesvol geanalyseerd" boven een foutmelding.
 
 ## 4. Nep-tekst als het antwoordformaat afwijkt
 

@@ -13,5 +13,5 @@ Documentatie is in het Nederlands.
 
 ## Commando's
 
-- Draaien: `./mvnw spring-boot:run` (vereist `GROQ_API_KEY` in env of `.env`)
+- Draaien: `./mvnw spring-boot:run` (vereist `ANTHROPIC_API_KEY` in env of `.env`)
 - Testen: `./mvnw test`
