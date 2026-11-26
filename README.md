@@ -4,6 +4,16 @@ Een webapp die een **Spotify-playlist analyseert** en met AI **één nieuw numme
 
 De gebruiker plakt een playlist-URL, de server haalt de tracklijst op met een headless Chrome-browser, stuurt die naar Claude (Anthropic) en toont de aanbeveling.
 
+## Screenshots
+
+| Startpagina | Onderzoek loopt |
+|---|---|
+| ![Startpagina](docs/screenshots/01-startpagina.png) | ![Onderzoek loopt](docs/screenshots/02-onderzoek-loopt.png) |
+
+**Resultaat**
+
+![Resultaat met aanbeveling](docs/screenshots/03-resultaat.png)
+
 ## Hoe het werkt
 
 ```

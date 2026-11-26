@@ -2,6 +2,11 @@
 
 Nieuwste bovenaan. Noteer per wijziging: wat, waarom, en eventuele beslissingen of afwegingen.
 
+## 2026-11-26: Screenshots in de README
+
+- Drie screenshots toegevoegd in `docs/screenshots/` (startpagina, onderzoek loopt, resultaat) en opgenomen in `README.md`, zodat je meteen ziet hoe de app eruitziet.
+- Gemaakt met headless Chromium (Playwright) tegen de lokaal draaiende app, 1280px breed op 2x. Het resultaat komt uit een echte analyse van een openbare Spotify-playlist (aanbeveling: "On the Nature of Daylight - Max Richter").
+
 ## 2026-11-26: Gestructureerde JSON-output van Claude (#4)
 
 - Probleem: de gebruiker zag alleen nep-zinnen ("Dit nummer past perfect bij je muzieksmaak..."). Claude's antwoord bevatte niet letterlijk `ONTDEKKING:` (waarschijnlijk markdown zoals `**ONTDEKKING:**`), en dan verving `formatDiscoveryResponse`/`extractValue` het hele antwoord door vaste tekst.
