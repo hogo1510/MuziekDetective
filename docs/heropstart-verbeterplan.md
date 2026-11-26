@@ -24,14 +24,14 @@ Kleine wijzigingen met direct merkbaar effect.
 
 - [ ] **Model configureerbaar maken.** `MODEL` en de API-URL staan hard in `GroqService.java`. Verplaats ze naar `application.properties` (`muziekdetective.llm.model=...`, overschrijfbaar met een env-variabele). Dan kun je modellen wisselen zonder code aan te passen of opnieuw te bouwen.
 - [ ] **Sterker model kiezen.** Zie [AI-model kiezen](#ai-model-kiezen) hieronder.
-- [ ] **Gestructureerde output (JSON).** Laat het model antwoorden met JSON (`response_format: {"type": "json_object"}` bij Groq/OpenAI-compatibele API's, of tool use / structured output bij Claude), bijvoorbeeld:
+- [x] **Gestructureerde output (JSON).** (2026-11-26, met één kandidaat; meerdere kandidaten volgt in fase 2.) Laat het model antwoorden met JSON (`response_format: {"type": "json_object"}` bij Groq/OpenAI-compatibele API's, of tool use / structured output bij Claude), bijvoorbeeld:
   ```json
   {"kandidaten": [{"titel": "...", "artiest": "...", "stijl": "...", "reden": "...", "voor_wie": "..."}]}
   ```
   Daarmee verdwijnen `formatDiscoveryResponse` en `extractValue` met hun hardgecodeerde nep-zinnen (#4).
 - [ ] **Fouten eerlijk tonen (#3).** Laat `GroqService` en de scraper een exception gooien in plaats van een foutmelding als tekst / een lege lijst terug te geven. De controller zet dan `success=false`. Weiger ook een analyse als de playlist 0 nummers heeft.
-- [ ] **Cookieknop-wachttijd verlagen (#6)** van 30 s naar ~3 s, of helemaal overslaan in headless.
-- [ ] **Dode code weg (#5):** `progressUpdates`, `sessionId` en `/progress` verwijderen, of in fase 3 echt aansluiten.
+- [x] **Cookieknop-wachttijd verlagen (#6)** van 30 s naar ~3 s, of helemaal overslaan in headless.
+- [x] **Dode code weg (#5):** `progressUpdates`, `sessionId` en `/progress` verwijderen, of in fase 3 echt aansluiten.
 
 ## Fase 2: betere aanbevelingen (de kern)
 
@@ -59,13 +59,13 @@ Voor de Search API heb je een Spotify developer-app nodig (client credentials fl
 
 ## Fase 4: codekwaliteit
 
-- [ ] Services als Spring beans (`@Service`) injecteren in plaats van `new` per verzoek (#8).
+- [x] Services als Spring beans (`@Service`) injecteren in plaats van `new` per verzoek (#8).
 - [ ] `RestClient` (Spring) of een gedeelde `HttpClient` gebruiken.
 - [ ] `playlistDataScraper` hernoemen naar `PlaylistDataScraper`, of verwijderen na fase 3.
-- [ ] SLF4J-logger in plaats van `System.out`.
+- [x] SLF4J-logger in plaats van `System.out`.
 - [ ] Configuratie via `@ConfigurationProperties` (API-sleutels, model, rate-limit).
-- [ ] Rate limiter: betrouwbaar IP gebruiken achter Railway's proxy en oude IP's opruimen (#7). Of de library Bucket4j gebruiken.
-- [ ] **Tests:** unit tests voor het parsen van de LLM-JSON, de verificatielogica en de rate limiter; de externe API's mocken (bijv. met WireMock of `MockRestServiceServer`).
+- [x] Rate limiter: betrouwbaar IP gebruiken achter Railway's proxy en oude IP's opruimen (#7). Of de library Bucket4j gebruiken.
+- [x] **Tests:** unit tests voor de rate limiter, IP-bepaling, prompt en controller (2026-11-26). Nog te doen zodra die bestaan: het parsen van de LLM-JSON en de verificatielogica; de externe API's mocken (bijv. met WireMock of `MockRestServiceServer`).
 - [ ] Afhankelijkheden bijwerken: Spring Boot 3.5.6 → de nieuwste versie (controleer of 4.x stabiel is en wat er breekt), Gson/jsoup/Selenium naar de laatste versies. Java 21 → 25 (de nieuwste LTS) is optioneel.
 
 ## Fase 5: nieuwe features (ideeën)

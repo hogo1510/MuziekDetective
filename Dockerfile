@@ -19,6 +19,8 @@ ENV PATH="$JAVA_HOME/bin:$PATH"
 
 ENV CHROME_BIN=/usr/bin/chromium
 ENV CHROMEDRIVER_BIN=/usr/bin/chromedriver
+# Railway zet een reverse proxy voor de app; vertrouw diens X-Forwarded-For.
+ENV TRUST_PROXY=true
 
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar

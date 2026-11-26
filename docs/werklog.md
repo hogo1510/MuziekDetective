@@ -2,6 +2,26 @@
 
 Nieuwste bovenaan. Noteer per wijziging: wat, waarom, en eventuele beslissingen of afwegingen.
 
+## 2026-11-26: Gestructureerde JSON-output van Claude (#4)
+
+- Probleem: de gebruiker zag alleen nep-zinnen ("Dit nummer past perfect bij je muzieksmaak..."). Claude's antwoord bevatte niet letterlijk `ONTDEKKING:` (waarschijnlijk markdown zoals `**ONTDEKKING:**`), en dan verving `formatDiscoveryResponse`/`extractValue` het hele antwoord door vaste tekst.
+- Oplossing: structured outputs. Claude moet JSON teruggeven volgens het schema van het nieuwe record `Ontdekking` (titel, artiest, stijl, reden, voorWie), via `.outputConfig(Ontdekking.class)` in de Anthropic Java-SDK. De API garandeert dat het antwoord aan het schema voldoet. `ClaudeService.formatOntdekking` zet het om naar de vertrouwde ONTDEKKING/STIJL/REDEN/VOOR WIE-tekst, dus `index.html` hoefde niet te veranderen.
+- `formatDiscoveryResponse` en `extractValue` (met de nep-zinnen) verwijderd. Een afgekapt antwoord (`max_tokens`) geeft nu een foutmelding.
+- Getest: echte aanroep met een kleine playlist (M83, MGMT, Tame Impala) gaf "1901 - Phoenix" met uitleg. `./mvnw test` slaagt.
+
+## 2026-11-26: Cookie-wachttijd, dode code, rate limiter, logging en tests
+
+- **Cookie-wachttijd (#6):** de scraper wachtte tot 30 s op een cookieknop die headless meestal niet verschijnt. Nu een aparte wachttijd van 3 s, en er wordt ook gezocht op de standaard OneTrust-knop (`#onetrust-accept-btn-handler`). Getest op een echte playlist: 27 nummers in 22 s.
+- **Dode code (#5):** `/progress`-endpoint, `progressUpdates`, `sessionId` en de ongebruikte progress-callback in `ClaudeService` verwijderd. De voortgangsanimatie in `index.html` blijft (die was al los van de server).
+- **Rate limiter (#7):**
+  - Het IP komt nu uit `ClientIpResolver`. Achter een proxy (`TRUST_PROXY=true`, gezet in de Dockerfile) telt het *laatste* `X-Forwarded-For`-item, dat door de proxy is toegevoegd. Zonder proxy wordt de header genegeerd. Zo is de limiet niet meer te omzeilen door zelf een header mee te sturen.
+  - Verlopen IP's worden eens per venster opgeruimd, zodat de map niet blijft groeien. Updates gaan via `ConcurrentHashMap.compute`, zodat opruimen en tellen niet met elkaar botsen.
+  - Limiet en venster zijn instelbaar in `application.properties`.
+- **Logging (#8):** `System.out`/`System.err` vervangen door SLF4J-loggers in scraper, controller en `ClaudeService`. Details per track op DEBUG, samenvattingen op INFO, fouten met stacktrace op ERROR.
+- **Spring beans (#8):** scraper en `ClaudeService` zijn nu beans en worden in de controller geïnjecteerd in plaats van per verzoek met `new` gemaakt. Dit was nodig om de controller te kunnen testen.
+- **Tests (#8):** 21 tests, waaronder unit tests voor `RateLimiter` (met nepklok), `ClientIpResolver`, prompt en JSON-omzetting, plus MockMvc-tests voor de controller: succes, foutpad, rate limit en een vervalste `X-Forwarded-For`.
+- Afweging: de nep-zinnen in `formatDiscoveryResponse`/`extractValue` (#4) heb ik laten staan. Die verdwijnen pas met gestructureerde JSON-output (verbeterplan fase 1).
+
 ## 2026-11-26: ChromeDriver-versiefout lokaal opgelost
 
 - Fout: `session not created: This version of ChromeDriver only supports Chrome version 158` terwijl Chromium 156 (Fedora) geïnstalleerd is.

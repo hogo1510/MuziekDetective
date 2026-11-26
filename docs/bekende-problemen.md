@@ -35,19 +35,31 @@ Spotify's webspeler gebruikt een **gevirtualiseerde lijst**: alleen de rijen die
 - De scraper vangt alle exceptions af en geeft dan een lege lijst terug (`total_tracks: 0`). De AI krijgt een lege playlist en raadt dan maar wat.
 - `ClaudeService` vangt fouten af en geeft een foutmelding terug als gewone tekst. De controller zet dan `success=true`, dus de UI toont "Playlist succesvol geanalyseerd" boven een foutmelding.
 
-## 4. Nep-tekst als het antwoordformaat afwijkt
+## 4. ~~Nep-tekst als het antwoordformaat afwijkt~~ (opgelost 2026-11-26)
+
+Claude geeft nu JSON terug volgens een vast schema (structured outputs, record `Ontdekking`); de nep-zinnen zijn verwijderd. Oorspronkelijke beschrijving:
+
 
 `formatDiscoveryResponse` / `extractValue` vullen bij een afwijkend AI-antwoord **hardgecodeerde zinnen** in ("Dit nummer past perfect bij je muzieksmaak..."). De echte inhoud van het antwoord gaat dan verloren. Beter: gestructureerde output (JSON) vragen aan het model.
 
-## 5. `/progress`-endpoint wordt niet gebruikt
+## 5. ~~`/progress`-endpoint wordt niet gebruikt~~ (opgelost 2026-11-26)
+
+Endpoint, `progressUpdates` en `sessionId` zijn verwijderd. De voortgangsbalk in `index.html` is nog steeds alleen een animatie op tijd; echte voortgang (bijv. via SSE) is een idee voor later. Oorspronkelijke beschrijving:
+
 
 De controller maakt een `sessionId` aan, maar stuurt die nooit naar de browser. De voortgangsbalk in `index.html` is een **getimede animatie** en volgt het echte werk niet. Het endpoint en de `progressUpdates`-map zijn in feite dode code.
 
-## 6. Traag: tot 30 s wachten op een cookie-knop
+## 6. Traag: tot 30 s wachten op een cookie-knop (deels opgelost 2026-11-26)
+
+De cookieknop krijgt nu maximaal 3 s. Nog over: 5 × 2 s scrollen (dat bovendien niet werkt, zie #1) en per verzoek een nieuwe Chrome. Oorspronkelijke beschrijving:
+
 
 De scraper wacht tot 30 seconden op een "Accept"-cookieknop. In headless/niet-EU-omgevingen verschijnt die vaak niet, dus elke analyse verliest dan die tijd. Daarna nog eens 5 × 2 s scrollen. Ook wordt per verzoek een nieuwe Chrome gestart.
 
-## 7. Rate limiter
+## 7. ~~Rate limiter~~ (opgelost 2026-11-26)
+
+IP komt nu uit het laatste `X-Forwarded-For`-item (alleen met `TRUST_PROXY=true`), en verlopen IP's worden opgeruimd. Oorspronkelijke beschrijving:
+
 
 - Gebruikt het eerste IP in `X-Forwarded-For`. Dat deel kan een client zelf meesturen, dus de limiet is te omzeilen. Achter Railway's proxy is het laatste door de proxy toegevoegde IP betrouwbaarder.
 - De map met tijdstempels wordt nooit opgeruimd en groeit dus met elk nieuw IP.
@@ -55,6 +67,6 @@ De scraper wacht tot 30 seconden op een "Accept"-cookieknop. In headless/niet-EU
 ## 8. Overig
 
 - Klassenaam `playlistDataScraper` volgt de Java-conventie niet (`PlaylistDataScraper`).
-- Services worden per verzoek met `new` gemaakt in plaats van als Spring beans geïnjecteerd.
-- Logging gaat via `System.out`/`System.err` in plaats van een logger.
-- Er zijn geen echte tests: alleen `contextLoads`.
+- ~~Services worden per verzoek met `new` gemaakt~~ (opgelost 2026-11-26: Spring beans).
+- ~~Logging gaat via `System.out`/`System.err`~~ (opgelost 2026-11-26: SLF4J).
+- ~~Er zijn geen echte tests~~ (opgelost 2026-11-26: 21 tests). Nog niet getest: de Selenium-scraper zelf (die heeft een echte browser en Spotify nodig) en de echte Claude-aanroep.

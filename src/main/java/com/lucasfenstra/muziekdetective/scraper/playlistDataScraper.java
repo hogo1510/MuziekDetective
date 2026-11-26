@@ -11,12 +11,22 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class playlistDataScraper {
+
+    private static final Logger log = LoggerFactory.getLogger(playlistDataScraper.class);
+
+    /** De cookiebanner verschijnt meteen of helemaal niet (headless/buiten de EU), dus kort wachten. */
+    private static final Duration COOKIE_WAIT = Duration.ofSeconds(3);
+    private static final Duration TRACKLIST_WAIT = Duration.ofSeconds(30);
 
     public static class Track {
         private String title;
@@ -83,31 +93,22 @@ public class playlistDataScraper {
             options.addArguments("--remote-allow-origins=*");
 
             driver = new ChromeDriver(options);
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+            WebDriverWait wait = new WebDriverWait(driver, TRACKLIST_WAIT);
 
-            System.out.println("Navigeren naar Spotify playlist: " + playlistUrl);
+            log.info("Navigeren naar Spotify playlist: {}", playlistUrl);
 
             driver.get(playlistUrl);
 
-            // Wacht en accepteer cookies indien nodig
-            try {
-                WebElement acceptButton = wait.until(ExpectedConditions.elementToBeClickable(
-                        By.xpath("//button[contains(text(), 'Accept')]")));
-                acceptButton.click();
-                System.out.println("Cookies geaccepteerd");
-                Thread.sleep(2000);
-            } catch (Exception e) {
-                System.out.println("Geen cookie popup gevonden: " + e.getMessage());
-            }
+            acceptCookiesIfShown(driver);
 
             // Wacht tot de pagina laadt en tracks zichtbaar zijn
-            System.out.println("Wachten op tracks...");
+            log.debug("Wachten op tracks...");
             try {
                 wait.until(ExpectedConditions.presenceOfElementLocated(
                         By.cssSelector("div[data-testid='tracklist-row']")));
-                System.out.println("Tracklist gevonden!");
+                log.debug("Tracklist gevonden");
             } catch (Exception e) {
-                System.out.println("Timeout bij wachten op tracks, probeert alternatieve selectors...");
+                log.warn("Timeout bij wachten op tracks, probeert alternatieve selectors");
             }
 
             // Scroll naar beneden om alle tracks te laden
@@ -118,17 +119,17 @@ public class playlistDataScraper {
 
             // Primary selector
             trackRows = driver.findElements(By.cssSelector("div[data-testid='tracklist-row']"));
-            System.out.println("Aantal tracks gevonden met primary selector: " + trackRows.size());
+            log.debug("Tracks gevonden met primary selector: {}", trackRows.size());
 
             // Als geen tracks, probeer alternatieve selectors
             if (trackRows.isEmpty()) {
                 trackRows = driver.findElements(By.cssSelector("[data-testid*='track']"));
-                System.out.println("Aantal tracks gevonden met alternatieve selector: " + trackRows.size());
+                log.debug("Tracks gevonden met alternatieve selector: {}", trackRows.size());
             }
 
             if (trackRows.isEmpty()) {
                 trackRows = driver.findElements(By.cssSelector("div[class*='tracklist-row']"));
-                System.out.println("Aantal tracks gevonden met class selector: " + trackRows.size());
+                log.debug("Tracks gevonden met class selector: {}", trackRows.size());
             }
 
             // Verzamel track informatie
@@ -138,27 +139,40 @@ public class playlistDataScraper {
                     Track track = extractTrackInfo(driver, trackRow, i + 1);
                     if (track != null && !track.getTitle().equals("Onbekende titel")) {
                         tracks.add(track);
-                        System.out.println("✓ Track " + track.getPosition() + ": " +
-                                track.getTitle() + " - " + track.getArtist());
+                        log.debug("Track {}: {} - {}", track.getPosition(), track.getTitle(), track.getArtist());
                     }
                 } catch (Exception e) {
-                    System.err.println("✗ Fout bij track " + (i + 1) + ": " + e.getMessage());
+                    log.warn("Fout bij track {}: {}", i + 1, e.getMessage());
                 }
             }
 
-            System.out.println("Totaal aantal succesvolle tracks: " + tracks.size());
+            log.info("{} tracks opgehaald", tracks.size());
 
         } catch (Exception e) {
-            System.err.println("Fout tijdens scraping: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Fout tijdens scraping", e);
         } finally {
             if (driver != null) {
                 driver.quit();
-                System.out.println("Browser gesloten");
+                log.debug("Browser gesloten");
             }
         }
 
         return convertToJson(tracks);
+    }
+
+    private void acceptCookiesIfShown(WebDriver driver) {
+        try {
+            WebElement acceptButton = new WebDriverWait(driver, COOKIE_WAIT).until(
+                    ExpectedConditions.elementToBeClickable(By.xpath(
+                            "//button[@id='onetrust-accept-btn-handler' or contains(text(), 'Accept')]")));
+            acceptButton.click();
+            log.debug("Cookies geaccepteerd");
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.debug("Geen cookiebanner binnen {} s", COOKIE_WAIT.toSeconds());
+        }
     }
 
     private void scrollToBottom(WebDriver driver, int scrollCount) {
@@ -166,7 +180,7 @@ public class playlistDataScraper {
             for (int i = 0; i < scrollCount; i++) {
                 ((org.openqa.selenium.JavascriptExecutor) driver)
                         .executeScript("window.scrollTo(0, document.body.scrollHeight);");
-                System.out.println("Scroll " + (i + 1) + "/" + scrollCount);
+                log.debug("Scroll {}/{}", i + 1, scrollCount);
                 Thread.sleep(2000);
             }
         } catch (InterruptedException e) {
@@ -194,7 +208,7 @@ public class playlistDataScraper {
                         WebElement titleElement = trackRow.findElement(By.cssSelector("a[href*='/track/']"));
                         title = titleElement.getText();
                     } catch (Exception e3) {
-                        System.err.println("Kon titel niet vinden voor track " + position);
+                        log.debug("Kon titel niet vinden voor track {}", position);
                     }
                 }
             }
@@ -221,7 +235,7 @@ public class playlistDataScraper {
                             }
                         }
                     } catch (Exception e3) {
-                        System.err.println("Kon artiest niet vinden voor track " + position);
+                        log.debug("Kon artiest niet vinden voor track {}", position);
                     }
                 }
             }
@@ -246,12 +260,12 @@ public class playlistDataScraper {
             return new Track(title, artist, position);
 
         } catch (Exception e) {
-            System.err.println("Extractie fout voor track " + position + ": " + e.getMessage());
+            log.warn("Extractiefout voor track {}: {}", position, e.getMessage());
             return new Track("Onbekende titel", "Onbekende artiest", position);
         }
     }
 
-    private String convertToJson(List<Track> tracks) {
+    static String convertToJson(List<Track> tracks) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         JsonObject result = new JsonObject();
